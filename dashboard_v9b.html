@@ -3241,22 +3241,21 @@ function rPj(){withIndicatorFilter(()=>{
 
 function rTbl(){withIndicatorFilter(()=>{
   const tb=document.getElementById('tb');if(!tb)return;
-  // Empty by default: the table only shows cases once a Patient ID is typed.
+  // Show cases when ANY filter is active: a typed Patient ID OR an indicator chip (Case status, etc.).
+  // DALL here is already narrowed by the From-To date range + selected chips (via withIndicatorFilter).
   const hit=document.getElementById('pidHit');
   updateFuProgress();
-  if(!pidFilter){
+  const indActive=Object.values(indicatorChecks).some(s=>s.size>0);
+  if(!pidFilter&&!indActive){
     if(hit)hit.textContent='';
-    tb.innerHTML='<tr><td colspan="15" class="nodata">🔎 Type a Patient ID above to show matching cases</td></tr>';
+    tb.innerHTML='<tr><td colspan="15" class="nodata">🔎 Type a Patient ID above, or pick a filter (e.g. Case status), to show cases</td></tr>';
     return;
   }
-  // Search runs on DALL = current From-To date range (+ any indicator chips). ALL statuses are included
-  // (Pending AND Case Closed) so a patient's case is always findable. Apply/Reset re-filter via aD().
-  let rows=DALL.filter(r=>String(r.patientId||'').toLowerCase().includes(pidFilter));
+  // ALL statuses are included (Pending AND Case Closed) so a case is always findable.
+  let rows=pidFilter?DALL.filter(r=>String(r.patientId||'').toLowerCase().includes(pidFilter)):DALL;
   if(hit)hit.textContent=`${rows.length} found`;
   if(!rows.length){
-    const anyId=R_LIVE.some(r=>String(r.patientId||'').toLowerCase().includes(pidFilter));
-    const msg=anyId?'This Patient ID exists but is outside the current From-To date range - widen the dates or click Reset.':'Patient ID not found';
-    tb.innerHTML='<tr><td colspan="15" class="nodata">'+msg+'</td></tr>';return;
+    tb.innerHTML='<tr><td colspan="15" class="nodata">No matching cases — check the From–To dates, the indicator filters, or the Patient ID.</td></tr>';return;
   }
   const stb=s=>({'Case Closed':'bgn','Pending at K-PaF':'br','Pending at MHMS':'by'}[s]||'bgr');
   const dv=v=>displayValue(v||'');
