@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K-PaF · Patient Safety</title>
+<!-- Match the dashboards' theme (shared localStorage key 'kpaf_theme'; default light) -->
+<script>(function(){try{var t=localStorage.getItem('kpaf_theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens (mirror dashboard_v9 palette) ── */
+:root{ /* DARK (default) */
+  --bg:#001a3a; --bg2:#002651; --sf:#012a57;
+  --bd:rgba(0,147,213,.18); --bd2:rgba(0,147,213,.32);
+  --tx:#cfdcee; --hl:#eaf2fb; --mu:#90a4c0;
+  --gn:#3ecf8e; --gn2:#1a9960; --fld:rgba(0,0,0,.22);
+  --sh-lg:0 24px 60px rgba(0,0,0,.55);
+}
+:root[data-theme="light"]{ /* LIGHT (matches v9 default) */
+  --bg:#eef2f7; --bg2:#e3e9f2; --sf:#ffffff;
+  --bd:#e2e8f0; --bd2:#cdd7e3;
+  --tx:#3a4a5e; --hl:#0f2438; --mu:#64748b;
+  --gn:#2bb673; --gn2:#1a9960; --fld:#f3f6fa;
+  --sh-lg:0 24px 60px rgba(15,36,56,.18);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:'Open Sans',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--tx);
+  display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── Top bar ── */
+.bar{flex:0 0 auto;display:flex;flex-direction:column;gap:0;background:var(--sf);border-bottom:1px solid var(--bd)}
+.bar-top{display:flex;align-items:center;justify-content:center;padding:11px 24px 10px;border-bottom:1px solid var(--bd)}
+.bar-bot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:9px 24px}
+.brand{display:flex;align-items:center;gap:12px;justify-content:center;min-width:0}
+.flagmark{flex:0 0 auto;width:52px;height:34px;border-radius:5px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.15)}
+.flagmark img{width:100%;height:100%;object-fit:cover;display:block}
+.brandttl{font-size:1.3rem;font-weight:800;color:var(--hl);letter-spacing:-.2px;line-height:1.15;white-space:nowrap}
+.moh-brand{flex:0 0 auto;display:inline-flex;align-items:center;background:#fff;border-radius:8px;padding:6px 11px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.moh-logo{height:42px;width:auto;display:block;object-fit:contain}
+.co-brand{flex:0 0 auto;display:inline-flex;align-items:center;text-decoration:none;opacity:.92;transition:opacity .2s}
+.co-brand:hover{opacity:1}
+.co-logo{height:58px;width:auto;display:block;object-fit:contain;filter:brightness(0) invert(1) drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.rightgrp{display:flex;align-items:center;gap:16px;flex:0 0 auto}
+[data-theme="light"] .moh-brand{box-shadow:0 2px 8px rgba(0,0,0,.10)}
+[data-theme="light"] .co-logo{filter:none}
+[data-theme="light"] .flagmark{box-shadow:0 2px 8px rgba(15,36,56,.14),0 0 0 1px rgba(15,36,56,.06)}
+.mark{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  background:var(--gn);color:#fff;font-size:1.15rem;line-height:1;box-shadow:0 2px 8px rgba(43,182,115,.35)}
+.brand .t{display:flex;flex-direction:column;line-height:1.18;min-width:0}
+.brand .t b{color:var(--hl);font-size:.98rem;font-weight:800;white-space:nowrap}
+.brand .t span{color:var(--mu);font-size:.72rem;white-space:nowrap}
+.nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.who{color:var(--mu);font-size:.82rem;font-weight:700;white-space:nowrap}
+.b{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;border-radius:9px;padding:8px 15px;
+  border:1px solid transparent;transition:.15s;white-space:nowrap}
+.b-pri{background:var(--gn);color:#fff}
+.b-pri:hover{background:var(--gn2)}
+.b-out{background:transparent;color:var(--tx);border-color:var(--bd2)}
+.b-out:hover{background:rgba(127,127,127,.12)}
+.switch{display:inline-flex;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:3px}
+.seg-b{font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;border:0;background:transparent;
+  color:var(--mu);padding:6px 14px;border-radius:7px;transition:.15s}
+.seg-b:hover{color:var(--tx)}
+.seg-b.on{background:var(--gn);color:#fff;box-shadow:0 2px 6px rgba(43,182,115,.3)}
+
+/* ── Iframe stage ── */
+.stage{flex:1 1 auto;position:relative;background:var(--bg)}
+.frame{position:absolute;inset:0;width:100%;height:100%;border:0}
+[hidden]{display:none!important}
+
+/* ── Login modal ── */
+.mask{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:rgba(8,15,30,.55);backdrop-filter:blur(4px)}
+.card{width:min(380px,92vw);background:var(--sf);border:1px solid var(--bd);border-radius:16px;
+  padding:26px 24px;box-shadow:var(--sh-lg)}
+.card h2{margin:0 0 4px;color:var(--hl);font-size:1.2rem;font-weight:800}
+.card .sub{margin:0 0 18px;color:var(--mu);font-size:.82rem}
+.card label{display:block;color:var(--hl);font-size:.72rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:14px}
+.card input{display:block;width:100%;margin-top:6px;padding:10px 12px;font-family:inherit;font-size:.92rem;
+  background:var(--fld);color:var(--tx);border:1px solid var(--bd2);border-radius:9px;outline:none}
+.card input:focus{border-color:var(--gn)}
+.err{background:rgba(239,68,68,.12);color:#dc2626;border:1px solid rgba(239,68,68,.3);
+  border-radius:8px;padding:8px 10px;font-size:.8rem;margin-bottom:12px}
+.row{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
+.note{color:var(--mu);font-size:.7rem;margin-top:16px;text-align:center;line-height:1.5}
+
+/* ── Responsive: phones & small screens ── */
+@media(max-width:680px){
+  .bar{padding:8px 12px;gap:8px}
+  .brand .t span{display:none}             /* hide the long ministry subtitle on phones */
+  .brand .t b{font-size:.9rem;white-space:normal;line-height:1.15}
+  .mark{width:30px;height:30px;font-size:1rem}
+  .b{padding:8px 12px;font-size:.78rem}
+  .seg-b{padding:8px 11px;font-size:.78rem}
+  .who{display:none}                       /* hide username chip to save room (toggle shows the view) */
+  .nav{gap:7px}
+  .card{padding:22px 18px}
+}
+@media(max-width:380px){
+  .brand .t b{font-size:.82rem}
+  .b{padding:7px 9px;font-size:.72rem}
+  .seg-b{padding:7px 8px;font-size:.72rem}
+}
+/* Comfortable tap targets on touch devices */
+@media(hover:none) and (pointer:coarse){
+  .b,.seg-b{min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-top">
+    <div class="brand">
+      <div class="flagmark" title="Republic of Kiribati"><img src="https://flagcdn.com/w160/ki.png" alt="Flag of Kiribati"></div>
+      <h1 class="brandttl">Kiribati Patient Feedback Dashboard</h1>
+    </div>
+  </div>
+  <div class="bar-bot">
+    <span class="moh-brand" title="Kiribati Ministry of Health &amp; Medical Services">
+      <img src="Logo-MoH.png" alt="Kiribati Ministry of Health &amp; Medical Services" class="moh-logo" onerror="this.onerror=null;var b=this.closest('.moh-brand');if(b)b.style.display='none'">
+    </span>
+    <div class="nav">
+      <!-- logged OUT -->
+      <!-- logged IN -->
+      <div id="navAuth" class="switch" hidden>
+        <button id="tabAna" class="seg-b" onclick="showView('analytics')">📊 Analytics</button>
+        <button id="tabFu" class="seg-b" onclick="showView('followup')">📝 Follow-up</button>
+      </div>
+      <span id="whoLabel" class="who" hidden></span>
+      <button id="btnLogout" class="b b-out" onclick="logout()" hidden>Logout</button>
+    </div>
+    <a href="https://www.who.int/westernpacific" target="_blank" rel="noopener" class="co-brand" title="World Health Organization · Western Pacific Region">
+      <img src="who-wpro-logo-blue.png" alt="WHO Western Pacific Region" class="co-logo">
+    </a>
+  </div>
+</header>
+
+<main class="stage">
+  <!-- Staff tools load lazily after login. Data entry stays in Google Form. -->
+  <iframe id="frmAna" class="frame" title="Analytics dashboard" hidden></iframe>
+  <iframe id="frmFu" class="frame" title="Follow-up tool" hidden></iframe>
+  <!-- Màn hình mời đăng nhập khi chưa vào -->
+  <div id="welcome" class="frame" style="display:grid;place-items:center;text-align:center;padding:24px">
+    <div>
+      <div style="color:var(--hl);font-size:1.1rem;font-weight:800;margin-bottom:6px">Log in to view data</div>
+      <div style="color:var(--mu);font-size:.85rem;max-width:340px;line-height:1.55">This system contains patient information. Access is limited to authorized staff.</div>
+      <button id="btnLogin" class="b b-pri" style="margin-top:18px;padding:16px 30px;font-size:1.64rem" onclick="openLogin()">🔒 Log In</button>
+    </div>
+  </div>
+</main>
+
+<!-- Login modal -->
+<div id="loginMask" class="mask" hidden>
+  <form class="card" onsubmit="return doLogin(event)">
+    <h2>Log In</h2>
+    <p class="sub">Sign in to access staff tools.</p>
+    <label>Username<input id="liUser" autocomplete="username" spellcheck="false"></label>
+    <label>Password<input id="liPass" type="password" autocomplete="current-password"></label>
+    <div id="liErr" class="err" hidden></div>
+    <div class="row">
+      <button type="button" class="b b-out" onclick="closeLogin()">Cancel</button>
+      <button type="submit" class="b b-pri">Sign in</button>
+    </div>
+    <div class="note">Authorized staff only.</div>
+  </form>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────
+   Upload 2 keeps the Upload 4 shell design, but authenticates through
+   Google Apps Script. The script returns a short-lived token that child
+   pages reuse for follow-up writes.
+───────────────────────────────────────────────────────────────────── */
+const AUTH_FALLBACK_URL = 'https://script.google.com/macros/s/AKfycbwxB5h50ahr2w26tHP2TqIbFxM1jBOCZDqqNe0NOV-eQfPOy7tm0GZohDCmDZAji7VFOw/exec';
+function isAppsScriptUrl(u){return /^https:\/\/script\.google\.com\/macros\//.test((u||'').trim())}
+function authUrl(){
+  try{
+    const c=JSON.parse(localStorage.getItem('kpaf_sheet_cfg_v3')||'{}');
+    const fu=(c.followupUrl||'').trim(), data=(c.url||'').trim();
+    if(isAppsScriptUrl(fu))return fu;
+    if(isAppsScriptUrl(data))return data;
+  }catch(e){}
+  return AUTH_FALLBACK_URL;
+}
+
+/* Khóa sessionStorage — GIỮ NGUYÊN tên cũ để các dashboard con đọc được */
+const SK_AUTH = 'kpaf_v10_auth';    // username người đăng nhập
+const SK_TOKEN= 'kpaf_v10_token';   // Apps Script token
+const SK_VIEW = 'kpaf_v10_view';    // 'analytics' | 'followup'
+const SK_ROLE = 'kpaf_v10_role';    // 'viewer' = analytics only
+let fuLoaded = false;
+let anaLoaded = false;
+
+const LOCAL_FULL_ACCESS_USERS = {
+  hien:  'Hien2026@@@!!!',
+  ogusa: 'Ogusa2026@@!!',
+  marea: 'Marea2026@!'
+};
+
+const $ = id => document.getElementById(id);
+const authed  = () => !!sessionStorage.getItem(SK_AUTH);
+const curUser = () => sessionStorage.getItem(SK_AUTH) || '';
+const isViewer = () => sessionStorage.getItem(SK_ROLE) === 'viewer';
+const localFullAccessLogin = (user, pass) =>
+  Object.prototype.hasOwnProperty.call(LOCAL_FULL_ACCESS_USERS, user) &&
+  LOCAL_FULL_ACCESS_USERS[user] === pass;
+function completeLocalFullAccessLogin(user){
+  sessionStorage.setItem(SK_AUTH, user);
+  sessionStorage.setItem(SK_TOKEN, 'local-full-access:' + user);
+  sessionStorage.setItem(SK_ROLE, '');
+  closeLogin(); applyAuthUI();
+  showView('followup');
+}
+
+function openLogin(){
+  $('liErr').hidden = true; $('liUser').value=''; $('liPass').value='';
+  $('loginMask').hidden = false;
+  setTimeout(()=>$('liUser').focus(), 30);
+}
+function closeLogin(){ $('loginMask').hidden = true; }
+
+async function doLogin(e){
+  e.preventDefault();
+  const user = ($('liUser').value||'').trim().toLowerCase();
+  const pass  = $('liPass').value||'';
+  const er = $('liErr'); er.hidden = true;
+  const btn = e.target && e.target.querySelector('button[type="submit"]');
+  if(btn){ btn.disabled=true; btn.dataset.t=btn.textContent; btn.textContent='Signing in…'; }
+  if(localFullAccessLogin(user, pass)){
+    completeLocalFullAccessLogin(user);
+    if(btn){ btn.disabled=false; btn.textContent=btn.dataset.t||'Sign in'; }
+    return false;
+  }
+  try{
+    const res = await fetch(authUrl(),{method:'POST',redirect:'follow',
+      body:JSON.stringify({action:'login',user:user,pass:pass})});
+    let j=null; try{j=await res.json()}catch(_){}
+    if(j&&j.ok&&j.token){
+      sessionStorage.setItem(SK_AUTH, j.user||user);
+      sessionStorage.setItem(SK_TOKEN, j.token);
+      sessionStorage.setItem(SK_ROLE, j.role||'');
+      closeLogin(); applyAuthUI();
+      showView(isViewer() ? 'analytics' : 'followup');
+    } else {
+      er.textContent = (j&&j.error) || 'Incorrect username or password. Please try again.'; er.hidden = false;
+      $('liPass').value=''; $('liPass').focus();
+    }
+  }catch(err){
+    er.textContent = 'Could not connect to the sign-in server. Please check your network.'; er.hidden = false;
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent=btn.dataset.t||'Sign in'; }
+  }
+  return false;
+}
+
+function logout(){
+  sessionStorage.removeItem(SK_AUTH);
+  sessionStorage.removeItem(SK_TOKEN);
+  sessionStorage.removeItem(SK_ROLE);
+  sessionStorage.setItem(SK_VIEW, 'analytics');
+  const f = $('frmFu'); f.hidden = true; f.src = 'about:blank'; fuLoaded = false;
+  const a = $('frmAna'); a.hidden = true; a.src = 'about:blank'; anaLoaded = false;
+  applyAuthUI();
+}
+
+function applyAuthUI(){
+  const on = authed();
+  $('btnLogin').hidden = on;
+  $('navAuth').hidden  = !on;
+  $('whoLabel').hidden = !on;
+  $('btnLogout').hidden = !on;
+  $('welcome').hidden = on;                 // ẩn màn hình chào khi đã đăng nhập
+  $('tabFu').hidden = isViewer();
+  if (on) $('whoLabel').textContent = '👤 ' + curUser();
+  else { $('frmAna').hidden = true; $('frmFu').hidden = true; }
+}
+
+function showView(v){
+  if (!authed()){ return; }                       // chưa đăng nhập thì giữ màn hình chào
+  if(isViewer() && v!=='analytics')v='analytics';
+  if(v!=='analytics' && v!=='followup')v='followup';
+  $('welcome').hidden = true;
+  // Load lười từng iframe lần đầu mở
+  if (v==='analytics' && !anaLoaded){ $('frmAna').src = 'dashboard_v9.html'; anaLoaded = true; }
+  if (v==='followup' && !fuLoaded){ $('frmFu').src = 'dashboard_v9b.html'; fuLoaded = true; }
+  // Hiện đúng iframe, ẩn hai cái còn lại
+  $('frmAna').hidden = (v!=='analytics');
+  $('frmFu').hidden = (v!=='followup');
+  // Tô đậm nút tab đang chọn
+  $('tabAna').classList.toggle('on', v==='analytics');
+  $('tabFu').classList.toggle('on', v==='followup');
+  sessionStorage.setItem(SK_VIEW, v);
+}
+
+addEventListener('storage', e => {
+  if (e.key === 'kpaf_theme')
+    document.documentElement.setAttribute('data-theme', e.newValue==='dark' ? 'dark' : 'light');
+});
+addEventListener('keydown', e => { if (e.key==='Escape') closeLogin(); });
+
+(function boot(){
+  applyAuthUI();
+  showView(authed() ? (isViewer() ? 'analytics' : (sessionStorage.getItem(SK_VIEW) || 'followup')) : 'analytics');
+})();
+</script>
+</body>
+</html>
